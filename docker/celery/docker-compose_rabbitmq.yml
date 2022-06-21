@@ -1,0 +1,34 @@
+version: '2'
+services:
+  redis:
+    restart: always
+    image: redis
+    command: redis-server --requirepass ${BROKER_PW} --port 6380
+    ports:
+    - "6380:6380"
+  rabbitmq:
+    restart: always
+    build:
+      dockerfile: $PWD/../rabbitmq/Dockerfile
+      context: ../rabbitmq
+    image: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=${BROKER_PW}
+  flower:
+    restart: always
+    build:
+      dockerfile: $PWD/../flower/Dockerfile
+      context: ../../celery-mlflow.sample
+    command: celery -A worker.app flower --broker_api=http://admin:${BROKER_PW}@rabbitmq:15672/api/
+    environment:
+      - BROKER_URL=amqp://admin:${BROKER_PW}@rabbitmq:5672//
+      - RESULT_BACKEND=redis://:${BROKER_PW}@redis:6380/0
+    ports:
+      - 5555:5555
+    depends_on:
+      - redis
+      - rabbitmq

@@ -1,0 +1,21 @@
+version: '2'
+services:
+  redis:
+    restart: always
+    image: redis
+    command: redis-server --requirepass ${BROKER_PW} --port 6380
+    ports:
+    - "6380:6380"
+  flower:
+    restart: always
+    build:
+      dockerfile: $PWD/../flower/Dockerfile
+      context: ../../celery-mlflow.sample
+    command: celery -A worker.app flower
+    environment:
+      - BROKER_URL=redis://:${BROKER_PW}@redis:6380/0
+      - RESULT_BACKEND=redis://:${BROKER_PW}@redis:6380/0
+    ports:
+      - 5555:5555
+    depends_on:
+      - redis

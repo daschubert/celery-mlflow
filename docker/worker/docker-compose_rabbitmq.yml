@@ -1,0 +1,14 @@
+version: '2'
+services:
+  worker:
+    restart: always
+    build:
+      dockerfile: $PWD/../worker/Dockerfile
+      context: ../../celery-mlflow.sample
+    image: celery_sample
+    command: celery -A worker.app worker -l info -n rabbitmq_sample@%h
+    environment:
+      - BROKER_URL=amqp://admin:${BROKER_PW}@${BROKER_IP}:5672//
+      - RESULT_BACKEND=redis://:${BROKER_PW}@${BROKER_IP}:6380/0
+      - C_FORCE_ROOT="true"
+    network_mode: host
